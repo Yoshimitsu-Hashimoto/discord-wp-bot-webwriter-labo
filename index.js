@@ -27,6 +27,7 @@ function generateSignature(discordUserId, timestamp) {
 // WordPressエンドポイントにユーザー削除を通知する関数
 async function notifyWordPressUserDeletion(discordUserId, mode = 'soft', dryRun = false) {
   try {
+    // リクエスト送信直前にタイムスタンプを生成（±5分の有効期限を考慮）
     const timestamp = Math.floor(Date.now() / 1000);
     const signature = generateSignature(discordUserId, timestamp);
 
@@ -38,7 +39,21 @@ async function notifyWordPressUserDeletion(discordUserId, mode = 'soft', dryRun 
       dry_run: dryRun
     };
 
+    // デバッグ情報を追加（タイムスタンプの有効期限も表示）
+    const now = new Date();
+    const timestampDate = new Date(timestamp * 1000);
+    const timeDiff = Math.abs(now.getTime() - timestampDate.getTime()) / 1000;
+    
     console.log(`📤 WordPressに通知中: ${discordUserId} (mode: ${mode}, dry_run: ${dryRun})`);
+    console.log(`🔍 デバッグ情報:`, {
+      timestamp: timestamp,
+      timestampDate: timestampDate.toISOString(),
+      currentTime: now.toISOString(),
+      timeDifference: `${timeDiff}秒`,
+      isValidRange: timeDiff <= 300 ? '✅ 有効範囲内' : '❌ 範囲外',
+      signature: signature.substring(0, 16) + '...',
+      endpoint: WORDPRESS_ENDPOINT
+    });
 
     const response = await axios.post(WORDPRESS_ENDPOINT, requestBody, {
       headers: {
@@ -51,6 +66,48 @@ async function notifyWordPressUserDeletion(discordUserId, mode = 'soft', dryRun 
     return { success: true, data: response.data };
 
   } catch (error) {
+    // タイムスタンプエラーの場合はリトライを試行
+    if (error.response?.status === 403 && 
+        error.response?.data?.message?.includes('Timestamp is out of range')) {
+      console.log(`🔄 タイムスタンプエラーのためリトライ中: ${discordUserId}`);
+      
+      // 少し待ってから新しいタイムスタンプでリトライ
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      try {
+        const retryTimestamp = Math.floor(Date.now() / 1000);
+        const retrySignature = generateSignature(discordUserId, retryTimestamp);
+        
+        const retryRequestBody = {
+          discord_user_id: discordUserId,
+          ts: retryTimestamp,
+          sig: retrySignature,
+          mode: mode,
+          dry_run: dryRun
+        };
+        
+        console.log(`🔄 リトライ送信中: ${discordUserId} (新しいタイムスタンプ: ${retryTimestamp})`);
+        
+        const retryResponse = await axios.post(WORDPRESS_ENDPOINT, retryRequestBody, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000,
+        });
+        
+        console.log(`✅ WordPress通知成功（リトライ）: ${discordUserId}`, retryResponse.data);
+        return { success: true, data: retryResponse.data };
+        
+      } catch (retryError) {
+        console.error(`❌ WordPress通知エラー（リトライ後）: ${discordUserId}`, {
+          message: retryError.message,
+          status: retryError.response?.status,
+          data: retryError.response?.data,
+        });
+        return { success: false, error: retryError.message };
+      }
+    }
+    
     console.error(`❌ WordPress通知エラー: ${discordUserId}`, {
       message: error.message,
       status: error.response?.status,
