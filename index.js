@@ -14,6 +14,13 @@ const client = new Client({
 const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://minlight.work/discord-bot-only-connect/wp-json/discord/v1/deprovision';
 const DISCORD_BOT_SECRET = process.env.DISCORD_BOT_SECRET;
 
+// 日本時間でタイムスタンプを生成する関数
+function getJSTTimestamp() {
+  const now = new Date();
+  const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9時間
+  return Math.floor(jstTime.getTime() / 1000);
+}
+
 // HMAC-SHA256署名を生成する関数
 function generateSignature(discordUserId, timestamp) {
   const message = `${discordUserId}:${timestamp}`;
@@ -27,8 +34,8 @@ function generateSignature(discordUserId, timestamp) {
 // WordPressエンドポイントにユーザー削除を通知する関数
 async function notifyWordPressUserDeletion(discordUserId, mode = 'soft', dryRun = false) {
   try {
-    // リクエスト送信直前にタイムスタンプを生成（±5分の有効期限を考慮）
-    const timestamp = Math.floor(Date.now() / 1000);
+    // 日本時間でタイムスタンプを生成
+    const timestamp = getJSTTimestamp();
     const signature = generateSignature(discordUserId, timestamp);
 
     const requestBody = {
@@ -39,8 +46,9 @@ async function notifyWordPressUserDeletion(discordUserId, mode = 'soft', dryRun 
       dry_run: dryRun
     };
 
-    // デバッグ情報を追加（タイムスタンプの有効期限も表示）
+    // デバッグ情報を追加（日本時間で表示）
     const now = new Date();
+    const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     const timestampDate = new Date(timestamp * 1000);
     const timeDiff = Math.abs(now.getTime() - timestampDate.getTime()) / 1000;
     
@@ -48,6 +56,7 @@ async function notifyWordPressUserDeletion(discordUserId, mode = 'soft', dryRun 
     console.log(`🔍 デバッグ情報:`, {
       timestamp: timestamp,
       timestampDate: timestampDate.toISOString(),
+      jstTime: jstTime.toISOString(),
       currentTime: now.toISOString(),
       timeDifference: `${timeDiff}秒`,
       isValidRange: timeDiff <= 300 ? '✅ 有効範囲内' : '❌ 範囲外',
@@ -75,7 +84,7 @@ async function notifyWordPressUserDeletion(discordUserId, mode = 'soft', dryRun 
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       try {
-        const retryTimestamp = Math.floor(Date.now() / 1000);
+        const retryTimestamp = getJSTTimestamp();
         const retrySignature = generateSignature(discordUserId, retryTimestamp);
         
         const retryRequestBody = {
@@ -127,6 +136,12 @@ client.once('clientReady', (c) => {
   if (!process.env.DISCORD_TOKEN) {
     console.warn('⚠️ DISCORD_TOKENが設定されていません');
   }
+  
+  // 日本時間での現在時刻を表示
+  const now = new Date();
+  const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  console.log(`🕐 日本時間: ${jstTime.toISOString()}`);
+  console.log(`🕐 タイムスタンプ: ${getJSTTimestamp()}`);
 });
 
 // サーバー退会イベント
