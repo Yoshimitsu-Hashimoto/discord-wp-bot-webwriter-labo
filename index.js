@@ -11,7 +11,7 @@ const client = new Client({
 });
 
 // WordPressエンドポイントの設定
-const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://minlight.work/discord-bot-only-connect/wp-json/discord/v1/deprovision';
+const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://minlight.work/meibotest/wp-json/discord/v1/deprovision';
 const DISCORD_BOT_SECRET = process.env.DISCORD_BOT_SECRET;
 
 // 日本時間でタイムスタンプを生成する関数
@@ -154,7 +154,7 @@ client.on('guildMemberRemove', async (member) => {
   // WordPressに通知
   if (DISCORD_BOT_SECRET) {
     // 本番環境では dry_run: false に変更
-    const result = await notifyWordPressUserDeletion(discordUserId, 'soft', true);
+    const result = await notifyWordPressUserDeletion(discordUserId, 'soft', false);
     
     if (result.success) {
       console.log(`✅ ${userTag} のWordPressユーザー削除処理が完了しました`);
