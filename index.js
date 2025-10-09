@@ -14,11 +14,10 @@ const client = new Client({
 const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://nakamura-editing.co.jp/meibo/wp-json/discord/v1/deprovision';
 const DISCORD_BOT_SECRET = process.env.DISCORD_BOT_SECRET;
 
-// 日本時間でタイムスタンプを生成する関数
+// UTC時間でタイムスタンプを生成する関数
 function getJSTTimestamp() {
   const now = new Date();
-  const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9時間
-  return Math.floor(jstTime.getTime() / 1000);
+  return Math.floor(now.getTime() / 1000);
 }
 
 // HMAC-SHA256署名を生成する関数
