@@ -11,8 +11,8 @@ const client = new Client({
 });
 
 // WordPressエンドポイントの設定
-// const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://nakamura-editing.co.jp/meibo/wp-json/discord/v1/deprovision';
-const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://minlight.work/meibotest/wp-json/discord/v1/deprovision';
+const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://nakamura-editing.co.jp/meibo/wp-json/discord/v1/deprovision';
+// const WORDPRESS_ENDPOINT = process.env.WORDPRESS_ENDPOINT || 'https://minlight.work/meibotest/wp-json/discord/v1/deprovision';
 const DISCORD_BOT_SECRET = process.env.DISCORD_BOT_SECRET;
 
 // UTC時間でタイムスタンプを生成する関数
